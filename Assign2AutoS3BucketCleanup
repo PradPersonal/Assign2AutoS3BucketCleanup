@@ -1,0 +1,31 @@
+import json
+import boto3
+from datetime import datetime, timedelta, timezone
+
+def lambda_handler(event, context):
+    s3_client = boto3.client('s3')
+    bucket_name = 'assign2autos3bucketcleanup'
+    days_threshould = 30
+    cutoff_date = datetime.now(timezone.utc)-timedelta(days=days_threshould)
+    try:
+        s3_bucket=s3_client.list_objects_v2(Bucket=bucket_name)
+        #print(f"{s3_bucket}")
+        if 'Contents' in s3_bucket:
+            for obj in s3_bucket['Contents']:
+                object_key=obj['Key']
+                #print(object_key)
+                last_modif=obj['LastModified']
+                if last_modif<cutoff_date:
+                    print(f"Deleting object: {object_key} (Last modified: {last_modified})")
+                    s3_client.delete_object(Bucket=bucket_name, Key=object_key)
+        else:
+            print(f"No objects found in bucket: {bucket_name}")
+    except Exception as ex:
+        print(f'Error processing s3 bucket with following error: {ex}')
+        raise ex
+    
+    # TODO implement
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Auto s3 bucket deletion completed!')
+    }
